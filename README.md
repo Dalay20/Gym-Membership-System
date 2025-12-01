@@ -53,8 +53,7 @@ PYTHONPATH=. pytest -q
 
 # Ejecutar el menú interactivo
 python main.py
-```
-# Gym-Membership-System
 
-pip install -r requirements.txt
-PYTHONPATH=. pytest -q
+# Ejecutar el paylint
+cd /workspaces/Gym-Membership-System && pylint *.py --disable=C0111,C0103
+```
