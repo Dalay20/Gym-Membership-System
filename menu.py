@@ -9,6 +9,63 @@ from utils import (
 )
 
 
+def print_purchase_summary(items, buyer, costs, total):
+    """Print the purchase summary with cost breakdown.
+    
+    Args:
+        items: List of Item objects selected by the user
+        buyer: Buyer object with calculated costs
+        costs: Dictionary with cost breakdown
+        total: Total amount to pay
+    """
+    print("\n" + "="*50)
+    print("=== RESUMEN DE SU COMPRA ===")
+    print("="*50)
+
+    # Show selected memberships and features
+    print("\nMembresías seleccionadas:")
+    for idx, item in enumerate(items, 1):
+        print(f"\n  {idx}. Plan: {item.plan_name}")
+        if item.additional_features:
+            feat_list = ', '.join(item.additional_features)
+            print(f"     Características adicionales: {feat_list}")
+        if item.premium_membership_features:
+            prem_list = ', '.join(item.premium_membership_features)
+            print(f"     Características premium: {prem_list}")
+
+    # Show cost breakdown
+    print("\nDesglose de costos:")
+    for plan_name, cost in costs.items():
+        if cost > 0:
+            print(f"  {plan_name}: ${cost:.2f}")
+
+    # Mostrar subtotal y recargos/descuentos
+    subtotal_before_adjustments = (
+        buyer.sum_costs(costs) +
+        buyer.special_discount_amount -
+        buyer.premium_surcharge_amount
+    )
+
+    if buyer.premium_surcharge_amount > 0 or buyer.special_discount_amount > 0:
+        print(f"\n  Subtotal: ${subtotal_before_adjustments:.2f}")
+
+        if buyer.premium_surcharge_amount > 0:
+            print(f"  Recargo Premium (15%): +${buyer.premium_surcharge_amount:.2f}")
+            # Mostrar desglose por plan si está disponible
+            if getattr(buyer, 'premium_surcharge_breakdown', None):
+                print("  Desglose Recargo Premium:")
+                for pname, svalue in buyer.premium_surcharge_breakdown.items():
+                    if svalue and svalue > 0:
+                        print(f"    - {pname}: +${svalue:.2f}")
+
+        if buyer.special_discount_amount > 0:
+            print(f"  Descuento especial: -${buyer.special_discount_amount:.2f}")
+
+    print("\n" + "="*50)
+    print(f"  TOTAL A PAGAR: ${total:.2f}")
+    print("="*50)
+
+
 def menu():
     """Interactive menu for gym membership selection and purchase.
 
@@ -105,52 +162,7 @@ def menu():
         total = buyer.sum_costs(costs)
 
         # Requirement 8: Display summary for user confirmation
-        print("\n" + "="*50)
-        print("=== RESUMEN DE SU COMPRA ===")
-        print("="*50)
-
-        # Show selected memberships and features
-        print("\nMembresías seleccionadas:")
-        for idx, item in enumerate(items, 1):
-            print(f"\n  {idx}. Plan: {item.plan_name}")
-            if item.additional_features:
-                feat_list = ', '.join(item.additional_features)
-                print(f"     Características adicionales: {feat_list}")
-            if item.premium_membership_features:
-                prem_list = ', '.join(item.premium_membership_features)
-                print(f"     Características premium: {prem_list}")
-
-        # Show cost breakdown
-        print("\nDesglose de costos:")
-        for plan_name, cost in costs.items():
-            if cost > 0:
-                print(f"  {plan_name}: ${cost:.2f}")
-
-        # Mostrar subtotal y recargos/descuentos
-        subtotal_before_adjustments = (
-            buyer.sum_costs(costs) +
-            buyer.special_discount_amount -
-            buyer.premium_surcharge_amount
-        )
-
-        if buyer.premium_surcharge_amount > 0 or buyer.special_discount_amount > 0:
-            print(f"\n  Subtotal: ${subtotal_before_adjustments:.2f}")
-
-            if buyer.premium_surcharge_amount > 0:
-                print(f"  Recargo Premium (15%): +${buyer.premium_surcharge_amount:.2f}")
-                # Mostrar desglose por plan si está disponible
-                if getattr(buyer, 'premium_surcharge_breakdown', None):
-                    print("  Desglose Recargo Premium:")
-                    for pname, svalue in buyer.premium_surcharge_breakdown.items():
-                        if svalue and svalue > 0:
-                            print(f"    - {pname}: +${svalue:.2f}")
-
-            if buyer.special_discount_amount > 0:
-                print(f"  Descuento especial: -${buyer.special_discount_amount:.2f}")
-
-        print("\n" + "="*50)
-        print(f"  TOTAL A PAGAR: ${total:.2f}")
-        print("="*50)
+        print_purchase_summary(items, buyer, costs, total)
 
         # Notificación de descuentos grupales
         if any(qty > 1 for qty in buyer.count_membership().values()):
