@@ -35,6 +35,11 @@ class Item:
         'Specialized Training Programs': 80
     }
 
+    # Optional availability maps. Leave empty to assume everything is available.
+    # You can set e.g. Item.PLAN_AVAILABLE['Premium'] = False to mark unavailable.
+    PLAN_AVAILABLE = {}
+    FEATURE_AVAILABLE = {}
+
     def __init__(self, plan_name, additional_features, premium_membership_features):
         self.plan_name = plan_name
         self.additional_features = additional_features

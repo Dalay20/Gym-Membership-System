@@ -25,9 +25,14 @@ def menu():
             print("Por favor, seleccione uno de los planes disponibles listados arriba.")
             continue
 
-        # Requirement 7: Validate plan availability
-        if not validate_plan_availability(plan_name):
+        # Requirement 7: Validate plan availability (más descriptivo)
+        from utils import check_plan_availability
+
+        available, reason = check_plan_availability(plan_name)
+        if not available:
             print(f"ERROR: El plan '{plan_name}' no está disponible actualmente.")
+            if reason:
+                print(f"Razón: {reason}.")
             print("Por favor, seleccione otro plan.")
             continue
 
@@ -39,11 +44,16 @@ def menu():
         features_list = [f.strip() for f in features_input.split(",")] if features_input else []
         valid_features, invalid_features = select_features(features_list)
 
-        # Requirement 7 & 10: Display error for unavailable features
+        # Requirement 7 & 10: Display error for unavailable features (más descriptivo)
         if invalid_features:
             print("\nADVERTENCIA: Las siguientes características no están disponibles:")
+            from utils import check_feature_availability
             for inv_feat in invalid_features:
-                print(f"  - '{inv_feat}'")
+                available_feat, reason_feat = check_feature_availability(inv_feat)
+                if reason_feat:
+                    print(f"  - '{inv_feat}': {reason_feat}")
+                else:
+                    print(f"  - '{inv_feat}'")
             print("Las características inválidas serán ignoradas.")
             print("Continuando solo con las características válidas...")
 
