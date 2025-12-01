@@ -1,0 +1,9 @@
+[MAIN]
+# Disable specific messages for the menu function
+disable=R0914,R0912,R0915
+
+[DESIGN]
+# Allow slightly more complex functions
+max-locals=20
+max-branches=18
+max-statements=60
