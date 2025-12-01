@@ -68,3 +68,65 @@ def get_plan_cost(plan_name):
     if plan_name in Item.plan:
         return Item.plan[plan_name]["cost"]
     return 0
+
+
+def validate_plan_availability(plan_name):
+    """Validate that a membership plan is available.
+
+    Args:
+        plan_name: The plan name to check.
+
+    Returns:
+        bool: True if plan is available, False otherwise.
+    """
+    return plan_name in Item.plan
+
+
+def check_plan_availability(plan_name):
+    """Check plan availability and provide a reason when unavailable.
+
+    Returns:
+        tuple: (available: bool, reason: str|None)
+    """
+    if not plan_name:
+        return False, "Nombre de plan vacío"
+    if plan_name in Item.plan:
+        # Si existe una mapping de disponibilidad, respetarla; por defecto True
+        available = getattr(Item, 'PLAN_AVAILABLE', {}).get(plan_name, True)
+        if available:
+            return True, None
+        return False, "El plan está marcado como no disponible"
+    return False, "El plan no existe"
+
+
+def validate_feature_availability(feature_name):
+    """Validate that a feature is available.
+
+    Args:
+        feature_name: The feature name to check.
+
+    Returns:
+        bool: True if feature is available, False otherwise.
+    """
+    return (feature_name in Item.ADDITIONAL_FEATURES or
+            feature_name in Item.PREMIUM_FEATURES)
+
+
+def check_feature_availability(feature_name):
+    """Check feature availability and provide a reason when unavailable.
+
+    Returns:
+        tuple: (available: bool, reason: str|None)
+    """
+    if not feature_name:
+        return False, "Nombre de característica vacío"
+    # Por compatibilidad, asumimos que ADDITIONAL_FEATURES y PREMIUM_FEATURES
+    # contienen valores de coste (int). La disponibilidad se puede controlar
+    # opcionalmente desde Item.FEATURE_AVAILABLE (dict de bool).
+    if (feature_name in Item.ADDITIONAL_FEATURES or
+            feature_name in Item.PREMIUM_FEATURES):
+        available = getattr(Item, 'FEATURE_AVAILABLE', {}).get(feature_name, True)
+        if available:
+            return True, None
+        return False, "La característica está marcada como no disponible"
+    return False, "La característica no existe"

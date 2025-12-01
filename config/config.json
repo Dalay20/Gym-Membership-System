@@ -1,0 +1,32 @@
+{
+  "plan": {
+    "Basic": {
+      "benefits": "Access to standard gym equipment and locker room.",
+      "cost": 25
+    },
+    "Premium": {
+      "benefits": "Includes Basic + Sauna access and free towel service.",
+      "cost": 30
+    },
+    "Student": {
+      "benefits": "Access to standard gym equipment and locker room + early hours access.",
+      "cost": 20
+    },
+    "Family": {
+      "benefits": "Access for up to 4 family members + Pool access.",
+      "cost": 40
+    }
+  },
+  "additional_features": {
+    "Personal Training": 30,
+    "Group Classes": 20,
+    "Access to Pool": 15,
+    "Specialized Program": 40
+  },
+  "premium_features": {
+    "Exclusive Gym Facilities": 100,
+    "Specialized Training Programs": 80
+  },
+  "plan_available": {},
+  "feature_available": {}
+}
