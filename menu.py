@@ -1,10 +1,15 @@
 """Interactive menu for gym membership purchase system."""
 from models import Item, Buyer
-from utils import show_options, validar_plan, select_features
+from utils import (show_options, validar_plan, select_features,
+                   validate_plan_availability)
 
 
 def menu():
-    """Interactive menu for gym membership selection and purchase."""
+    """Interactive menu for gym membership selection and purchase.
+
+    Returns:
+        float: Total cost if confirmed and valid, -1 if cancelled or invalid.
+    """
     print("=== BIENVENIDO AL SISTEMA DE MEMBRESÍAS DEL GYM ===")
 
     items = []
@@ -12,14 +17,21 @@ def menu():
     while True:
         show_options()
 
-        # Selección del plan
+        # Selección del plan (Requirement 7: Validate availability)
         plan_input = input("\nIngrese el nombre del plan que desea comprar: ")
         plan_name = validar_plan(plan_input)
         if not plan_name:
-            print("Plan no válido. Intente nuevamente.")
+            print(f"ERROR: El plan '{plan_input}' no es válido.")
+            print("Por favor, seleccione uno de los planes disponibles listados arriba.")
             continue
 
-        # Selección de features adicionales
+        # Requirement 7: Validate plan availability
+        if not validate_plan_availability(plan_name):
+            print(f"ERROR: El plan '{plan_name}' no está disponible actualmente.")
+            print("Por favor, seleccione otro plan.")
+            continue
+
+        # Selección de features adicionales (Requirement 7: Validate availability)
         features_input = input(
             "Ingrese features adicionales separados por coma "
             "(o presione Enter para none): "
@@ -27,8 +39,13 @@ def menu():
         features_list = [f.strip() for f in features_input.split(",")] if features_input else []
         valid_features, invalid_features = select_features(features_list)
 
+        # Requirement 7 & 10: Display error for unavailable features
         if invalid_features:
-            print(f"Features inválidas ignoradas: {', '.join(invalid_features)}")
+            print("\nADVERTENCIA: Las siguientes características no están disponibles:")
+            for inv_feat in invalid_features:
+                print(f"  - '{inv_feat}'")
+            print("Las características inválidas serán ignoradas.")
+            print("Continuando solo con las características válidas...")
 
         # Separar features normales de premium
         normal_features = [f for f in valid_features if f in Item.ADDITIONAL_FEATURES]
@@ -61,44 +78,96 @@ def menu():
         if next_action != "1":
             print("Opción no válida, continuando con el menú...\n")
 
+    # Requirement 10: Handle case when no items selected
     if not items:
-        print("No se seleccionó ninguna membresía. Saliendo del sistema.")
-        return
+        print("\nERROR: No se seleccionó ninguna membresía.")
+        print("No se puede procesar una compra sin al menos un plan.")
+        print("Saliendo del sistema.")
+        return -1  # Requirement 9: Return -1 for invalid input
 
-    # Crear comprador y calcular costos
-    buyer = Buyer(items)
-    costs = buyer.calculate_costs()
-    total = buyer.sum_costs(costs)
+    # Requirement 10: Error handling for calculation
+    try:
+        # Crear comprador y calcular costos
+        buyer = Buyer(items)
+        costs = buyer.calculate_costs()
+        total = buyer.sum_costs(costs)
 
-    # Mostrar resumen
-    print("\n=== RESUMEN DE SU COMPRA ===")
-    for plan_name, cost in costs.items():
-        if cost > 0:
-            print(f"{plan_name}: ${cost:.2f}")
+        # Requirement 8: Display summary for user confirmation
+        print("\n" + "="*50)
+        print("=== RESUMEN DE SU COMPRA ===")
+        print("="*50)
 
-    # Mostrar subtotal y recargos/descuentos
-    subtotal_before_adjustments = (
-        buyer.sum_costs(costs) +
-        buyer.special_discount_amount -
-        buyer.premium_surcharge_amount
-    )
+        # Show selected memberships and features
+        print("\nMembresías seleccionadas:")
+        for idx, item in enumerate(items, 1):
+            print(f"\n  {idx}. Plan: {item.plan_name}")
+            if item.additional_features:
+                feat_list = ', '.join(item.additional_features)
+                print(f"     Características adicionales: {feat_list}")
+            if item.premium_membership_features:
+                prem_list = ', '.join(item.premium_membership_features)
+                print(f"     Características premium: {prem_list}")
 
-    if buyer.premium_surcharge_amount > 0 or buyer.special_discount_amount > 0:
-        print(f"\nSubtotal: ${subtotal_before_adjustments:.2f}")
+        # Show cost breakdown
+        print("\nDesglose de costos:")
+        for plan_name, cost in costs.items():
+            if cost > 0:
+                print(f"  {plan_name}: ${cost:.2f}")
 
-        if buyer.premium_surcharge_amount > 0:
-            print(f"Recargo Premium (15%): +${buyer.premium_surcharge_amount:.2f}")
+        # Mostrar subtotal y recargos/descuentos
+        subtotal_before_adjustments = (
+            buyer.sum_costs(costs) +
+            buyer.special_discount_amount -
+            buyer.premium_surcharge_amount
+        )
 
-        if buyer.special_discount_amount > 0:
-            print(f"Descuento especial: -${buyer.special_discount_amount:.2f}")
+        if buyer.premium_surcharge_amount > 0 or buyer.special_discount_amount > 0:
+            print(f"\n  Subtotal: ${subtotal_before_adjustments:.2f}")
 
-    print(f"Total a pagar: ${total:.2f}")
+            if buyer.premium_surcharge_amount > 0:
+                print(f"  Recargo Premium (15%): +${buyer.premium_surcharge_amount:.2f}")
 
-    # Notificación de descuentos grupales
-    if any(qty > 1 for qty in buyer.count_membership().values()):
-        buyer.notify_discount()
+            if buyer.special_discount_amount > 0:
+                print(f"  Descuento especial: -${buyer.special_discount_amount:.2f}")
 
-    print("\n¡Gracias por su compra!")
+        print("\n" + "="*50)
+        print(f"  TOTAL A PAGAR: ${total:.2f}")
+        print("="*50)
+
+        # Notificación de descuentos grupales
+        if any(qty > 1 for qty in buyer.count_membership().values()):
+            print("\n💡 ", end="")
+            buyer.notify_discount()
+
+        # Requirement 8: User confirmation before finalizing
+        print("\n¿Desea confirmar esta compra?")
+        print("1 - Sí, confirmar y finalizar")
+        print("2 - No, cancelar compra")
+
+        confirmation = input("Ingrese su opción (1 o 2): ").strip()
+
+        if confirmation == "1":
+            print("\n✅ ¡Compra confirmada!")
+            print("¡Gracias por su compra!")
+            return total  # Requirement 9: Return positive integer (total cost)
+
+        # Requirement 9: Return -1 if cancelled
+        print("\n❌ Compra cancelada.")
+        print("No se realizó ningún cargo.")
+        return -1
+
+    except ValueError as e:
+        # Requirement 10: Handle calculation errors gracefully
+        print(f"\nERROR DE CÁLCULO: {str(e)}")
+        print("No se pudo procesar la compra debido a un error en los cálculos.")
+        print("Por favor, contacte al administrador del sistema.")
+        return -1
+    except (KeyError, AttributeError, TypeError) as e:
+        # Requirement 10: Handle unexpected errors
+        print(f"\nERROR INESPERADO: {str(e)}")
+        print("Ocurrió un error al procesar su compra.")
+        print("Por favor, intente nuevamente o contacte al soporte técnico.")
+        return -1
 
 
 if __name__ == "__main__":

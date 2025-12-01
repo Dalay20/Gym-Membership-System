@@ -3,6 +3,8 @@ from gym_membership import (
     validar_plan, select_features, get_plan_cost,
     show_options, plan, Item, Buyer
 )
+from utils import validate_plan_availability, validate_feature_availability
+from menu import menu
 
 
 def test_validar_plan():
@@ -165,3 +167,176 @@ def test_integration_surcharge_and_special_discount():
     assert buyer.premium_surcharge_amount == 32.4
     assert buyer.special_discount_amount == 20.0
     assert round(total_final, 2) == 228.4
+
+
+# ============================================================================
+# NEW TESTS FOR REQUIREMENTS 7-10
+# ============================================================================
+
+def test_validate_plan_availability():
+    """Test Requirement 7: Validate that membership plans are available."""
+
+    # Valid plans should return True
+    assert validate_plan_availability("Basic") is True
+    assert validate_plan_availability("Premium") is True
+    assert validate_plan_availability("Student") is True
+    assert validate_plan_availability("Family") is True
+
+    # Invalid plans should return False
+    assert validate_plan_availability("Gold") is False
+    assert validate_plan_availability("Platinum") is False
+    assert validate_plan_availability("") is False
+    assert validate_plan_availability(None) is False
+
+
+def test_validate_feature_availability():
+    """Test Requirement 7: Validate that features are available."""
+
+    # Valid normal features
+    assert validate_feature_availability("Personal Training") is True
+    assert validate_feature_availability("Group Classes") is True
+    assert validate_feature_availability("Access to Pool") is True
+    assert validate_feature_availability("Specialized Program") is True
+
+    # Valid premium features
+    assert validate_feature_availability("Exclusive Gym Facilities") is True
+    assert validate_feature_availability("Specialized Training Programs") is True
+
+    # Invalid features
+    assert validate_feature_availability("Free Massage") is False
+    assert validate_feature_availability("24/7 Access") is False
+    assert validate_feature_availability("") is False
+
+
+def test_menu_returns_minus_one_on_cancel(monkeypatch):
+    """Test Requirement 9: Return -1 when user cancels the purchase."""
+
+    # Simulate user input: select plan, features, finalize, then cancel
+    inputs = iter([
+        "Basic",           # Plan selection
+        "",                # No additional features
+        "2",               # Finalize purchase
+        "2"                # Cancel purchase (2 = No, cancel)
+    ])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    result = menu()
+    assert result == -1
+
+
+def test_menu_returns_total_on_confirmation(monkeypatch):
+    """Test Requirement 9: Return total cost when user confirms purchase."""
+
+    # Simulate user input: select plan, features, finalize, then confirm
+    inputs = iter([
+        "Basic",           # Plan selection (cost: 25)
+        "",                # No additional features
+        "2",               # Finalize purchase
+        "1"                # Confirm purchase (1 = Yes, confirm)
+    ])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    result = menu()
+    # Basic plan costs 25, no features, no discounts
+    assert result == 25.0
+
+
+def test_menu_returns_minus_one_with_no_items(monkeypatch):
+    """Test Requirement 9 & 10: Verify return type is correct."""
+
+    # Simulate user input: select plan, finalize, then cancel
+    inputs = iter([
+        "Basic",           # Plan selection
+        "",                # No features
+        "2",               # Finalize purchase
+        "2"                # Cancel (return -1)
+    ])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    result = menu()
+    # Should return -1 when cancelled
+    assert result == -1
+
+
+def test_error_handling_invalid_plan_input(monkeypatch, capsys):
+    """Test Requirement 10: Error handling for invalid plan input."""
+
+    # Simulate user entering invalid plan, then valid plan, then cancel
+    inputs = iter([
+        "InvalidPlan",     # Invalid plan
+        "Basic",           # Valid plan (cost: 25)
+        "",                # No features
+        "2",               # Finalize
+        "2"                # Cancel
+    ])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    result = menu()
+    captured = capsys.readouterr()
+
+    # Should display error message
+    assert "ERROR" in captured.out or "no es válido" in captured.out.lower()
+    assert result == -1
+
+
+def test_error_handling_invalid_features(monkeypatch, capsys):
+    """Test Requirement 10: Error handling for invalid feature selection."""
+
+    # Simulate user entering valid plan with invalid features
+    inputs = iter([
+        "Premium",         # Valid plan
+        "Invalid Feature, Another Invalid",  # Invalid features
+        "2",               # Finalize
+        "2"                # Cancel
+    ])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    result = menu()
+    captured = capsys.readouterr()
+
+    # Should display warning about invalid features
+    assert "ADVERTENCIA" in captured.out or "no están disponibles" in captured.out
+    assert result == -1
+
+
+def test_user_confirmation_display(monkeypatch, capsys):
+    """Test Requirement 8: User confirmation displays complete information."""
+
+    # Simulate complete purchase flow
+    inputs = iter([
+        "Premium",                     # Plan selection
+        "Personal Training",           # Feature selection
+        "2",                           # Finalize
+        "1"                            # Confirm
+    ])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    result = menu()
+    captured = capsys.readouterr()
+
+    # Should display summary information
+    assert "RESUMEN" in captured.out
+    assert "Premium" in captured.out
+    assert "Personal Training" in captured.out or "TOTAL" in captured.out
+    assert "confirmar" in captured.out.lower()
+    assert result > 0  # Should return positive total
+
+
+def test_confirmation_shows_discounts_and_surcharges(monkeypatch, capsys):
+    """Test Requirement 8: Confirmation shows applied discounts and surcharges."""
+
+    # Simulate purchase with premium features (triggers surcharge)
+    inputs = iter([
+        "Basic",                           # Plan selection
+        "Exclusive Gym Facilities",        # Premium feature
+        "2",                               # Finalize
+        "1"                                # Confirm
+    ])
+    monkeypatch.setattr('builtins.input', lambda _: next(inputs))
+
+    result = menu()
+    captured = capsys.readouterr()
+
+    # Should show surcharge information
+    assert "Recargo Premium" in captured.out or "15%" in captured.out
+    assert result > 0

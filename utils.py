@@ -68,3 +68,28 @@ def get_plan_cost(plan_name):
     if plan_name in Item.plan:
         return Item.plan[plan_name]["cost"]
     return 0
+
+
+def validate_plan_availability(plan_name):
+    """Validate that a membership plan is available.
+
+    Args:
+        plan_name: The plan name to check.
+
+    Returns:
+        bool: True if plan is available, False otherwise.
+    """
+    return plan_name in Item.plan
+
+
+def validate_feature_availability(feature_name):
+    """Validate that a feature is available.
+
+    Args:
+        feature_name: The feature name to check.
+
+    Returns:
+        bool: True if feature is available, False otherwise.
+    """
+    return (feature_name in Item.ADDITIONAL_FEATURES or
+            feature_name in Item.PREMIUM_FEATURES)
