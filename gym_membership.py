@@ -1,3 +1,11 @@
+"""Gym membership system module with plan validation and feature selection.
+
+Note: According to requirement 4, the menu can handle multiple membership purchases.
+Classes Item and Buyer were created to fulfill the 4th requirement.
+
+This module re-exports all functionality from models, utils, and menu modules
+for backward compatibility.
+"""
 
 # Import all classes and functions from organized modules
 from models import Item, Buyer
