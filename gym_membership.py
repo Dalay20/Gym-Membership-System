@@ -32,6 +32,11 @@ class Item:
         'Specialized Program': 40
     }
 
+    PREMIUM_FEATURES = {
+        'Exclusive Gym Facilities': 100,
+        'Specialized Training Programs': 80
+    }
+
     def __init__(self, plan_name, additional_features, premium_membership_features):
             self.plan_name = plan_name
             self.additional_features = additional_features
@@ -52,12 +57,20 @@ class Item:
 
     def get_features_cost(self):
         features_cost = 0
+        # Sumar features adicionales normales
         for feature in self.additional_features:
+            features_cost += self.get_feature_cost(feature)
+        # Sumar features premium
+        for feature in self.premium_membership_features:
             features_cost += self.get_feature_cost(feature)
         return features_cost
 
     def get_feature_cost(self, feature):
-        return self.ADDITIONAL_FEATURES[feature]
+        if feature in self.ADDITIONAL_FEATURES:
+            return self.ADDITIONAL_FEATURES[feature]
+        elif feature in self.PREMIUM_FEATURES:
+            return self.PREMIUM_FEATURES[feature]
+        return 0
 
     def calculate_total_membership_cost(self):
         base_plan_cost = self.get_plan_cost()
@@ -73,6 +86,8 @@ class Buyer:
 
     def __init__(self, items):
             self.items = items
+            self.special_discount_amount = 0.0
+            self.premium_surcharge_amount = 0.0
 
     def apply_discount(self, cost):
         return cost * self.DISCOUNT_GROUP_MEMBERSHIP
@@ -129,7 +144,40 @@ class Buyer:
         total = 0.0
         for plan in costs:
             total += costs[plan]
-        return total
+        
+        # Aplicar recargo premium del 15% si hay features premium
+        if self.has_premium_features():
+            self.premium_surcharge_amount = total * 0.15
+            total += self.premium_surcharge_amount
+        
+        # Aplicar descuentos especiales basados en el coste total
+        discounted_total = self.apply_special_discount(total)
+        return discounted_total
+
+    def apply_special_discount(self, total):
+        """Aplica descuentos especiales fijos según el total.
+
+        Reglas:
+        - Si el coste total supera 400$, resta 50$.
+        - Si el coste total supera 200$, resta 20$.
+
+        Se almacena el monto descontado en `self.special_discount_amount`.
+        """
+        self.special_discount_amount = 0.0
+        if total > 400:
+            self.special_discount_amount = 50.0
+        elif total > 200:
+            self.special_discount_amount = 20.0
+
+        return max(0.0, total - self.special_discount_amount)
+
+    def has_premium_features(self):
+        """Verifica si algún item tiene features premium."""
+        for item in self.items:
+            for feature in item.premium_membership_features:
+                if feature in Item.PREMIUM_FEATURES:
+                    return True
+        return False
 
     """otros requerimientos"""
 
@@ -144,6 +192,10 @@ def show_options():
         """permitir a usuario seleccionar lo mostrado y guardarlo , requirement ?"""
     print("\n--- ADDITIONAL FEATURES ---")
     for feature, cost in Item.ADDITIONAL_FEATURES.items():
+        print(f"- {feature}: ${cost}")
+    
+    print("\n--- PREMIUM MEMBERSHIP FEATURES (15% surcharge applied) ---")
+    for feature, cost in Item.PREMIUM_FEATURES.items():
         print(f"- {feature}: ${cost}")
     """Permitir a usuario seleccionar lo mostrado, requirement ?"""
 
@@ -181,6 +233,7 @@ def select_features(features_input_list):
 
     # Mapeo insensible a mayúsculas para facilitar la búsqueda
     features_map = {k.lower(): k for k in Item.ADDITIONAL_FEATURES}
+    features_map.update({k.lower(): k for k in Item.PREMIUM_FEATURES})
 
     for item in features_input_list:
         clean_item = item.strip().lower()
@@ -190,6 +243,17 @@ def select_features(features_input_list):
             invalid_features.append(item.strip())
 
     return selected_valid_features, invalid_features
+
+
+# Exponer `plan` y `get_plan_cost` para compatibilidad con los tests
+plan = Item.plan
+
+
+def get_plan_cost(plan_name):
+    """Return the cost for a given plan name or 0 if not found."""
+    if plan_name in plan:
+        return plan[plan_name]["cost"]
+    return 0
 
 def menu():
     print("=== BIENVENIDO AL SISTEMA DE MEMBRESÍAS DEL GYM ===")
@@ -214,11 +278,25 @@ def menu():
         if invalid_features:
             print(f"Features inválidas ignoradas: {', '.join(invalid_features)}")
 
+        # Separar features normales de premium
+        normal_features = [f for f in valid_features if f in Item.ADDITIONAL_FEATURES]
+        premium_features = [f for f in valid_features if f in Item.PREMIUM_FEATURES]
+
         # Crear item y agregar a la lista
-        item = Item(plan_name, valid_features, premium_membership_features=[])
+        item = Item(plan_name, normal_features, premium_features)
         items.append(item)
 
-        print(f"\nPlan '{plan_name}' agregado con features: {', '.join(valid_features) if valid_features else 'ninguna'}.")
+        features_msg = []
+        if normal_features:
+            features_msg.append(f"Normal: {', '.join(normal_features)}")
+        if premium_features:
+            features_msg.append(f"Premium: {', '.join(premium_features)}")
+        
+        print(f"\nPlan '{plan_name}' agregado.")
+        if features_msg:
+            print(f"Features: {' | '.join(features_msg)}")
+        else:
+            print("Features: ninguna")
 
         # Preguntar al usuario qué desea hacer
         print("\n¿Qué desea hacer ahora?")
@@ -245,6 +323,19 @@ def menu():
     for plan, cost in costs.items():
         if cost > 0:
             print(f"{plan}: ${cost:.2f}")
+    
+    # Mostrar subtotal y recargos/descuentos
+    subtotal_before_adjustments = buyer.sum_costs(costs) + buyer.special_discount_amount - buyer.premium_surcharge_amount
+    
+    if buyer.premium_surcharge_amount > 0 or buyer.special_discount_amount > 0:
+        print(f"\nSubtotal: ${subtotal_before_adjustments:.2f}")
+        
+        if buyer.premium_surcharge_amount > 0:
+            print(f"Recargo Premium (15%): +${buyer.premium_surcharge_amount:.2f}")
+        
+        if buyer.special_discount_amount > 0:
+            print(f"Descuento especial: -${buyer.special_discount_amount:.2f}")
+    
     print(f"Total a pagar: ${total:.2f}")
 
     # Notificación de descuentos grupales
