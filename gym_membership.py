@@ -1,11 +1,9 @@
-"""Gym membership system module with plan validation and feature selection."""
-"""acorde al requerimiento 4, se asume que en el menu pueden haber dos compras, de dos o mas membresias, asi que se usa compras"""
-from multiprocessing.pool import ApplyResult
-
-
-"""se decidió crear las clases item y buyer debido al 4to requerimiento"""
+"""
+Módulo del sistema de gestión de membresías de gimnasio.
+Maneja la creación de planes, selección de características y cálculo de costos.
+"""
 class Item:
-
+    """Gym Membership System"""
     plan = {
         "Basic": {
             "benefits": 'Access to standard gym equipment and locker room.',
@@ -33,9 +31,9 @@ class Item:
     }
 
     def __init__(self, plan_name, additional_features, premium_membership_features):
-            self.plan_name = plan_name
-            self.additional_features = additional_features
-            self.premium_membership_features = premium_membership_features
+        self.plan_name = plan_name
+        self.additional_features = additional_features
+        self.premium_membership_features = premium_membership_features
 
     def get_plan_cost(self):
         """Get the cost of a specific plan.
@@ -51,46 +49,43 @@ class Item:
         return 0
 
     def get_features_cost(self):
+        """Calculate the total cost of additional features."""
         features_cost = 0
         for feature in self.additional_features:
             features_cost += self.get_feature_cost(feature)
         return features_cost
 
     def get_feature_cost(self, feature):
+        """Get the cost of a specific additional feature."""
         return self.ADDITIONAL_FEATURES[feature]
 
     def calculate_total_membership_cost(self):
+        """Calculate the total cost of the membership including plan and features."""
         base_plan_cost = self.get_plan_cost()
         features_cost = self.get_features_cost()
         cost = features_cost + base_plan_cost
         return cost
 
-
 class Buyer:
-
+    """Clase que representa al comprador y sus ítems seleccionados."""
     DISCOUNT_GROUP_MEMBERSHIP = 0.10
-    NOTIFICATION_GROUP_MEMBERSHIP = f"Adquiere planes de membresía con tus amigos y recibe descuentos de: {DISCOUNT_GROUP_MEMBERSHIP * 100}%"
-
+    NOTIFICATION_GROUP_MEMBERSHIP = (
+        f"Adquiere planes con tus amigos y recibe descuentos de: "
+        f"{DISCOUNT_GROUP_MEMBERSHIP * 100}%"
+    )
     def __init__(self, items):
-            self.items = items
+        self.items = items
 
     def apply_discount(self, cost):
+        """Aplica un descuento."""
         return cost * self.DISCOUNT_GROUP_MEMBERSHIP
 
     def notify_discount(self):
+        """Notifica al usuario sobre el descuento disponible."""
         print(self.NOTIFICATION_GROUP_MEMBERSHIP)
 
     def count_membership(self):
-        """
-        Cuenta cuántas membresías de cada tipo hay en la compra.
-
-        Args:
-            buyer: Objeto Buyer que contiene una lista de items.
-
-        Returns:
-            dict: Diccionario con formato { 'NombrePlan': cantidad }
-                  Ejemplo: { 'Premium': 2, 'Basic': 1 }
-        """
+        """Cuenta cuántas membresías de cada tipo hay en la compra."""
         plan_counts = {}
 
         for item in self.items:
@@ -101,7 +96,9 @@ class Buyer:
 
         return plan_counts
 
-    def validate_discount_membership_group(self, plan_counts):
+    @staticmethod
+    def validate_discount_membership_group(plan_counts):
+        """valida si hay un grupo de membresías con descuento."""
         valid_plans_discount_membership_group = []
         for plan in plan_counts:
             quantity = plan_counts[plan]
@@ -110,6 +107,7 @@ class Buyer:
         return valid_plans_discount_membership_group
 
     def calculate_costs(self):
+        """Calcula los costos totales de las membresías y aplica descuentos si corresponde."""
         plan_counts = self.count_membership()
         valid_plans_discount_membership_group = self.validate_discount_membership_group(plan_counts)
         costs = {"Basic": 0.0, "Premium": 0.0, "Student":0.0, "Family":0.0}
@@ -125,14 +123,13 @@ class Buyer:
                 costs[plan_name] -= discount_amount
         return costs
 
-    def sum_costs(self, costs):
+    @staticmethod
+    def sum_costs(costs):
+        """Suma los costos de todas las membresías."""
         total = 0.0
         for plan in costs:
             total += costs[plan]
         return total
-
-    """otros requerimientos"""
-
 
 def show_options():
     """Display available membership plans and additional features."""
@@ -141,11 +138,9 @@ def show_options():
         print(f"===== {plan_name} Plan =====")
         print(f"Benefits: {details['benefits']}")
         print(f"Cost: ${details['cost']}")
-        """permitir a usuario seleccionar lo mostrado y guardarlo , requirement ?"""
     print("\n--- ADDITIONAL FEATURES ---")
     for feature, cost in Item.ADDITIONAL_FEATURES.items():
         print(f"- {feature}: ${cost}")
-    """Permitir a usuario seleccionar lo mostrado, requirement ?"""
 
 
 def validar_plan(plan_input):
@@ -192,6 +187,7 @@ def select_features(features_input_list):
     return selected_valid_features, invalid_features
 
 def menu():
+    """Main menu for the Gym Membership System."""
     print("=== BIENVENIDO AL SISTEMA DE MEMBRESÍAS DEL GYM ===")
 
     items = []
@@ -207,7 +203,8 @@ def menu():
             continue
 
         # Selección de features adicionales
-        features_input = input("Ingrese features adicionales separados por coma (o presione Enter para none): ")
+        features_input = input("Ingrese features adicionales separados por coma "
+        "(o presione Enter para none): ")
         features_list = [f.strip() for f in features_input.split(",")] if features_input else []
         valid_features, invalid_features = select_features(features_list)
 
@@ -218,8 +215,8 @@ def menu():
         item = Item(plan_name, valid_features, premium_membership_features=[])
         items.append(item)
 
-        print(f"\nPlan '{plan_name}' agregado con features: {', '.join(valid_features) if valid_features else 'ninguna'}.")
-
+        features_text = ', '.join(valid_features) if valid_features else 'ninguna'
+        print(f"\nPlan '{plan_name}' agregado con features: {features_text}.")
         # Preguntar al usuario qué desea hacer
         print("\n¿Qué desea hacer ahora?")
         print("1 - Agregar otro plan")
@@ -228,7 +225,7 @@ def menu():
 
         if next_action == "2":
             break
-        elif next_action != "1":
+        if next_action != "1":
             print("Opción no válida, continuando con el menú...\n")
 
     if not items:
