@@ -95,6 +95,8 @@ class Buyer:
         self.items = items
         self.special_discount_amount = 0.0
         self.premium_surcharge_amount = 0.0
+        # Breakdown dict: { plan_name: surcharge_amount }
+        self.premium_surcharge_breakdown = {}
 
     def apply_discount(self, cost):
         """Calculate the group membership discount amount."""
@@ -155,7 +157,28 @@ class Buyer:
 
         # Aplicar recargo premium del 15% si hay features premium
         if self.has_premium_features():
+            # Calculamos el recargo total como antes
             self.premium_surcharge_amount = total * 0.15
+
+            # Generar desglose proporcional por plan
+            self.premium_surcharge_breakdown = {}
+            if total > 0:
+                for plan_name, plan_cost in costs.items():
+                    # Proporción del plan en el subtotal
+                    proportion = plan_cost / total if total else 0
+                    self.premium_surcharge_breakdown[plan_name] = round(
+                        self.premium_surcharge_amount * proportion, 2
+                    )
+                # Ajuste por redondeo: asegurar que la suma = premium_surcharge_amount
+                sum_break = sum(self.premium_surcharge_breakdown.values())
+                diff = round(self.premium_surcharge_amount - sum_break, 2)
+                if diff != 0:
+                    # Añadir la diferencia al primer plan no vacío
+                    for plan_name in costs:
+                        if costs[plan_name] > 0:
+                            self.premium_surcharge_breakdown[plan_name] += diff
+                            break
+
             total += self.premium_surcharge_amount
 
         # Aplicar descuentos especiales basados en el coste total
@@ -186,3 +209,25 @@ class Buyer:
                 if feature in Item.PREMIUM_FEATURES:
                     return True
         return False
+
+
+# Intentar cargar configuración opcional desde `config/config.json` mediante
+# el `config_manager`. Si no hay configuración o hay errores, se ignora y
+# se mantiene la configuración embebida.
+try:
+    from config_manager import load_config
+
+    _cfg = load_config()
+    if _cfg and isinstance(_cfg, dict):
+        if 'plan' in _cfg and isinstance(_cfg['plan'], dict):
+            Item.plan = _cfg['plan']
+        if 'additional_features' in _cfg and isinstance(_cfg['additional_features'], dict):
+            Item.ADDITIONAL_FEATURES = _cfg['additional_features']
+        if 'premium_features' in _cfg and isinstance(_cfg['premium_features'], dict):
+            Item.PREMIUM_FEATURES = _cfg['premium_features']
+        # Disponibilidad opcional
+        Item.PLAN_AVAILABLE = _cfg.get('plan_available', {}) or {}
+        Item.FEATURE_AVAILABLE = _cfg.get('feature_available', {}) or {}
+except Exception:
+    # Silenciosamente ignorar errores de carga para mantener compatibilidad
+    pass

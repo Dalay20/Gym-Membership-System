@@ -340,3 +340,32 @@ def test_confirmation_shows_discounts_and_surcharges(monkeypatch, capsys):
     # Should show surcharge information
     assert "Recargo Premium" in captured.out or "15%" in captured.out
     assert result > 0
+
+
+def test_premium_surcharge_breakdown_computes_proportionally():
+    """Verifica que el desglose del recargo premium suma al recargo total
+    y se distribuye proporcionalmente entre planes con coste > 0.
+    """
+    # Escenario: 2 planes Family con premium feature -> costos agrupados
+    item1 = Item("Family", [], ["Specialized Training Programs"])  # 40 + 80 = 120
+    item2 = Item("Family", [], ["Specialized Training Programs"])  # 120
+    buyer = Buyer([item1, item2])
+
+    costs = buyer.calculate_costs()  # debería aplicar descuento grupal
+    total_before = sum(costs.values())
+
+    # Forzar cálculo de suma para poblar premium_surcharge_amount y breakdown
+    final_total = buyer.sum_costs(costs)
+
+    # El recargo total debe ser 15% del subtotal antes del recargo
+    expected_surcharge = round((total_before) * 0.15, 2)
+    assert round(buyer.premium_surcharge_amount, 2) == expected_surcharge
+
+    # El desglose debe existir y su suma debe igualar al recargo total
+    breakdown = buyer.premium_surcharge_breakdown
+    assert isinstance(breakdown, dict)
+    sum_breakdown = round(sum(breakdown.values()), 2)
+    assert sum_breakdown == expected_surcharge
+
+    # Los valores deberían ser proporcionales: en este caso sólo 'Family' tiene coste
+    assert breakdown.get('Family', 0) == expected_surcharge

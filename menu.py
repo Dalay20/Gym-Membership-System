@@ -136,6 +136,12 @@ def menu():
 
             if buyer.premium_surcharge_amount > 0:
                 print(f"  Recargo Premium (15%): +${buyer.premium_surcharge_amount:.2f}")
+                # Mostrar desglose por plan si está disponible
+                if getattr(buyer, 'premium_surcharge_breakdown', None):
+                    print("  Desglose Recargo Premium:")
+                    for pname, svalue in buyer.premium_surcharge_breakdown.items():
+                        if svalue and svalue > 0:
+                            print(f"    - {pname}: +${svalue:.2f}")
 
             if buyer.special_discount_amount > 0:
                 print(f"  Descuento especial: -${buyer.special_discount_amount:.2f}")
