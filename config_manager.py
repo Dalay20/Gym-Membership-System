@@ -24,7 +24,7 @@ def load_config() -> Optional[Dict]:
         if not isinstance(data, dict):
             return None
         return data
-    except Exception:
+    except (json.JSONDecodeError, OSError, ValueError):
         return None
 
 

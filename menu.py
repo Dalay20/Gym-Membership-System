@@ -1,7 +1,12 @@
 """Interactive menu for gym membership purchase system."""
 from models import Item, Buyer
-from utils import (show_options, validar_plan, select_features,
-                   validate_plan_availability)
+from utils import (
+    show_options,
+    validar_plan,
+    select_features,
+    check_plan_availability,
+    check_feature_availability,
+)
 
 
 def menu():
@@ -26,8 +31,6 @@ def menu():
             continue
 
         # Requirement 7: Validate plan availability (más descriptivo)
-        from utils import check_plan_availability
-
         available, reason = check_plan_availability(plan_name)
         if not available:
             print(f"ERROR: El plan '{plan_name}' no está disponible actualmente.")
@@ -47,9 +50,8 @@ def menu():
         # Requirement 7 & 10: Display error for unavailable features (más descriptivo)
         if invalid_features:
             print("\nADVERTENCIA: Las siguientes características no están disponibles:")
-            from utils import check_feature_availability
             for inv_feat in invalid_features:
-                available_feat, reason_feat = check_feature_availability(inv_feat)
+                _available_feat, reason_feat = check_feature_availability(inv_feat)
                 if reason_feat:
                     print(f"  - '{inv_feat}': {reason_feat}")
                 else:

@@ -355,7 +355,7 @@ def test_premium_surcharge_breakdown_computes_proportionally():
     total_before = sum(costs.values())
 
     # Forzar cálculo de suma para poblar premium_surcharge_amount y breakdown
-    final_total = buyer.sum_costs(costs)
+    buyer.sum_costs(costs)
 
     # El recargo total debe ser 15% del subtotal antes del recargo
     expected_surcharge = round((total_before) * 0.15, 2)

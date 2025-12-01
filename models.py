@@ -216,18 +216,22 @@ class Buyer:
 # se mantiene la configuración embebida.
 try:
     from config_manager import load_config
+except ImportError:
+    load_config = None
 
-    _cfg = load_config()
-    if _cfg and isinstance(_cfg, dict):
-        if 'plan' in _cfg and isinstance(_cfg['plan'], dict):
-            Item.plan = _cfg['plan']
-        if 'additional_features' in _cfg and isinstance(_cfg['additional_features'], dict):
-            Item.ADDITIONAL_FEATURES = _cfg['additional_features']
-        if 'premium_features' in _cfg and isinstance(_cfg['premium_features'], dict):
-            Item.PREMIUM_FEATURES = _cfg['premium_features']
-        # Disponibilidad opcional
-        Item.PLAN_AVAILABLE = _cfg.get('plan_available', {}) or {}
-        Item.FEATURE_AVAILABLE = _cfg.get('feature_available', {}) or {}
-except Exception:
-    # Silenciosamente ignorar errores de carga para mantener compatibilidad
-    pass
+if load_config:
+    try:
+        _cfg = load_config()
+        if _cfg and isinstance(_cfg, dict):
+            if 'plan' in _cfg and isinstance(_cfg['plan'], dict):
+                Item.plan = _cfg['plan']
+            if 'additional_features' in _cfg and isinstance(_cfg['additional_features'], dict):
+                Item.ADDITIONAL_FEATURES = _cfg['additional_features']
+            if 'premium_features' in _cfg and isinstance(_cfg['premium_features'], dict):
+                Item.PREMIUM_FEATURES = _cfg['premium_features']
+            # Disponibilidad opcional
+            Item.PLAN_AVAILABLE = _cfg.get('plan_available', {}) or {}
+            Item.FEATURE_AVAILABLE = _cfg.get('feature_available', {}) or {}
+    except (ValueError, TypeError, OSError):
+        # Ignorar errores de parsing o IO, seguir con la configuración embebida
+        pass

@@ -92,10 +92,7 @@ def check_plan_availability(plan_name):
         return False, "Nombre de plan vacío"
     if plan_name in Item.plan:
         # Si existe una mapping de disponibilidad, respetarla; por defecto True
-        try:
-            available = Item.PLAN_AVAILABLE.get(plan_name, True)
-        except Exception:
-            available = True
+        available = getattr(Item, 'PLAN_AVAILABLE', {}).get(plan_name, True)
         if available:
             return True, None
         return False, "El plan está marcado como no disponible"
@@ -128,10 +125,7 @@ def check_feature_availability(feature_name):
     # opcionalmente desde Item.FEATURE_AVAILABLE (dict de bool).
     if (feature_name in Item.ADDITIONAL_FEATURES or
             feature_name in Item.PREMIUM_FEATURES):
-        try:
-            available = Item.FEATURE_AVAILABLE.get(feature_name, True)
-        except Exception:
-            available = True
+        available = getattr(Item, 'FEATURE_AVAILABLE', {}).get(feature_name, True)
         if available:
             return True, None
         return False, "La característica está marcada como no disponible"
