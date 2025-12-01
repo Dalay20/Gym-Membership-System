@@ -1,0 +1,70 @@
+"""Validation and utility functions for gym membership system."""
+from models import Item
+
+
+def validar_plan(plan_input):
+    """Validate and normalize plan input.
+
+    Args:
+        plan_input: The plan name entered by the user.
+
+    Returns:
+        Normalized plan name if valid, None otherwise.
+    """
+    if not plan_input:
+        return None
+
+    normalized_plan = plan_input.strip().capitalize()
+
+    if normalized_plan in Item.plan:
+        return normalized_plan
+    return None
+
+
+def select_features(features_input_list):
+    """Validate and select features from user input list.
+
+    Args:
+        features_input_list: List of feature names entered by the user.
+
+    Returns:
+        Tuple of (valid_features, invalid_features).
+    """
+    selected_valid_features = []
+    invalid_features = []
+
+    # Mapeo insensible a mayúsculas para facilitar la búsqueda
+    features_map = {k.lower(): k for k in Item.ADDITIONAL_FEATURES}
+    features_map.update({k.lower(): k for k in Item.PREMIUM_FEATURES})
+
+    for item in features_input_list:
+        clean_item = item.strip().lower()
+        if clean_item in features_map:
+            selected_valid_features.append(features_map[clean_item])
+        elif clean_item:  # Si no está vacío pero no coincide
+            invalid_features.append(item.strip())
+
+    return selected_valid_features, invalid_features
+
+
+def show_options():
+    """Display available membership plans and additional features."""
+    print("\n--- GYM MEMBERSHIP PLANS ---")
+    for plan_name, details in Item.plan.items():
+        print(f"===== {plan_name} Plan =====")
+        print(f"Benefits: {details['benefits']}")
+        print(f"Cost: ${details['cost']}")
+    print("\n--- ADDITIONAL FEATURES ---")
+    for feature, cost in Item.ADDITIONAL_FEATURES.items():
+        print(f"- {feature}: ${cost}")
+
+    print("\n--- PREMIUM MEMBERSHIP FEATURES (15% surcharge applied) ---")
+    for feature, cost in Item.PREMIUM_FEATURES.items():
+        print(f"- {feature}: ${cost}")
+
+
+def get_plan_cost(plan_name):
+    """Return the cost for a given plan name or 0 if not found."""
+    if plan_name in Item.plan:
+        return Item.plan[plan_name]["cost"]
+    return 0
